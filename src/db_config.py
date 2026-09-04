@@ -22,12 +22,12 @@ def _build_url(include_database: bool) -> str:
 
 
 def get_server_engine(echo: bool = False) -> Engine:
-    """Engine connected to the MySQL server, no database selected."""
+  
     return create_engine(_build_url(include_database=False), echo=echo)
 
 
 def get_engine(echo: bool = False) -> Engine:
-    """Engine connected directly to DB_NAME (the Data Warehouse)."""
+
     return create_engine(_build_url(include_database=True), echo=echo)
 
 
