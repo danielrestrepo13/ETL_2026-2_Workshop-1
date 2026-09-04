@@ -1,22 +1,3 @@
-"""
-dimensional_model.py
----------------------
-Task 4: Dimensional Transformation
-
-Responsibility:
-    - Build the four dimension tables (DimDate, DimTechnology,
-      DimCandidateProfile, DimCountry), each with an auto-incrementing
-      surrogate key starting at 1. Natural source values are never used
-      as primary keys.
-    - Map every prepared application row to its corresponding dimension
-      surrogate keys.
-    - Build FactApplications at the declared grain: one row per
-      candidate application.
-
-Conceptual flow (per Section 11 of the workshop):
-    Prepared Candidate Data -> Dimension Records -> Surrogate Keys
-    -> Key Mapping -> Fact Table
-"""
 
 import logging
 from dataclasses import dataclass
@@ -38,14 +19,7 @@ class DimensionalModel:
 
 
 def build_dim_date(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    DimDate - one row per distinct Application Date present in the data.
-    Supports R1 (hiring trends over time).
-    surrogate key: date_key (int, YYYYMMDD form, still generated -
-    never the raw string date is used as PK elsewhere; date_key here
-    doubles as a deterministic surrogate for readability, but is treated
-    as an opaque integer key throughout the model).
-    """
+
     dates = pd.Series(df["Application Date"].dt.normalize().unique()).sort_values()
     dim = pd.DataFrame({"full_date": dates})
     dim["date_key"] = dim["full_date"].dt.strftime("%Y%m%d").astype(int)

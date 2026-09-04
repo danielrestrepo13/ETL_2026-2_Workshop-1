@@ -1,14 +1,5 @@
 """
-queries.py
-----------
 Task 6: Analytical Queries and KPIs
-
-Runs the five required analytical outputs (R1-R5) directly against the
-MySQL Data Warehouse (never against the source CSV or intermediate
-DataFrames), as required by Section 13 of the workshop.
-
-For every analytical output this prints: the requirement, the business
-question, the SQL query, the result, and a brief interpretation.
 """
 
 import pandas as pd

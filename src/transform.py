@@ -9,21 +9,6 @@ Responsibility:
     - Handle missing values / duplicates if required (documented below).
     - Apply the HIRED business rule.
     - Create derived attributes required by R1-R5 (yoe_band, score_gap).
-
-Preparation decisions (documented per workshop requirement 10.2):
-    1. `Application Date` is cast from string to datetime64.
-    2. Text columns (Country, Seniority, Technology) are stripped of
-       leading/trailing whitespace to avoid duplicate dimension members
-       caused only by formatting (e.g. "Norway " vs "Norway").
-    3. No missing-value imputation is performed: profiling (Task 1)
-       confirmed 0 nulls across all columns.
-    4. No row deduplication is performed: profiling confirmed 0 fully
-       duplicated rows. Rows sharing an email (repeat applicants) are
-       kept, since the declared grain is "one application", not
-       "one candidate".
-    5. `YOE` is bucketed into experience bands for `DimCandidateProfile`
-       (supports R3), because YOE is continuous and not analytically
-       useful as a raw dimension attribute.
 """
 
 import logging
@@ -33,7 +18,7 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-# Business rule thresholds (Section 5.1 of the workshop)
+# Business rule 
 HIRE_SCORE_THRESHOLD = 7
 
 # YOE banding used by DimCandidateProfile (supports R3)
@@ -54,11 +39,7 @@ def _yoe_to_band(yoe: int) -> str:
 
 
 def prepare(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Task 10.2 - Data Preparation.
-    Applies only the preparation required by the data and the analytical
-    model. No business logic (hiring rule) is applied here.
-    """
+   
     df = df.copy()
 
     before_rows = len(df)
@@ -70,13 +51,11 @@ def prepare(df: pd.DataFrame) -> pd.DataFrame:
         logger.warning("%d rows have an unparseable Application Date and will be dropped", invalid_dates)
         df = df.dropna(subset=["Application Date"])
 
-    # 2. Standardize categorical text (trim whitespace only - values are
-    #    already clean per profiling, this guards against future data drift)
+    # 2. Standardize categorical text (trim whitespace only - values are already clean per profiling, this guards against future data drift)
     for col in ["Country", "Seniority", "Technology", "First Name", "Last Name", "Email"]:
         df[col] = df[col].str.strip()
 
-    # 3. Missing values: none found in profiling, but guard defensively
-    #    for any column required by the model.
+    # 3. Missing values: none found in profiling
     required_cols = [
         "Application Date", "Country", "Seniority", "Technology",
         "YOE", "Code Challenge Score", "Technical Interview Score",
@@ -86,7 +65,7 @@ def prepare(df: pd.DataFrame) -> pd.DataFrame:
         logger.warning("%d rows missing required fields and will be dropped", missing_before)
         df = df.dropna(subset=required_cols)
 
-    # 4. Duplicates: profiling found 0 fully duplicated rows; guard anyway.
+    # 4. Duplicates: profiling found 0 fully duplicated rows
     dup_count = df.duplicated().sum()
     if dup_count:
         logger.warning("%d fully duplicated rows found and will be dropped", dup_count)
@@ -97,10 +76,7 @@ def prepare(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def apply_business_rules(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Task 10.3 - Business Transformation.
-    Implements the HIRED rule and the derived attributes needed by R1-R5.
-    """
+  
     df = df.copy()
 
     # Hiring outcome (R1, R2, R3, R4, R5)
@@ -122,7 +98,6 @@ def apply_business_rules(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def transform(raw_df: pd.DataFrame) -> pd.DataFrame:
-    """Full transformation pipeline: prepare -> apply business rules."""
     prepared = prepare(raw_df)
     transformed = apply_business_rules(prepared)
     return transformed

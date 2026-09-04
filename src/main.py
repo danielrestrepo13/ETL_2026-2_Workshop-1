@@ -1,11 +1,6 @@
 """
-main.py
--------
-Pipeline orchestrator for Workshop-1 (Recruitment Dimensional Data Warehouse).
-Data Warehouse: MySQL 8.0+ (see db_config.py / .env.example for credentials).
-
 Usage:
-    python src/main.py                 # full pipeline: extract -> transform -> model -> load -> queries
+    python src/main.py                 # full pipeline: extract transform model load queries
     python src/main.py --schema        # (re)create schema only
     python src/main.py --load          # extract + transform + model + load only
     python src/main.py --queries       # run the R1-R5 analytical queries only (DW must already be loaded)

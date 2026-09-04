@@ -1,20 +1,3 @@
-"""
-db_config.py
-------------
-Centralizes the MySQL connection configuration for the Data Warehouse.
-
-Credentials are never hardcoded: they are read from environment
-variables, optionally loaded from a local .env file (see .env.example
-for the expected variable names). This keeps secrets out of the
-repository and out of version control (.env is listed in .gitignore).
-
-Two engines are provided:
-    - get_server_engine(): connects to the MySQL server WITHOUT
-      selecting a database. Used once, to run `CREATE DATABASE IF NOT
-      EXISTS` before the schema exists.
-    - get_engine(): connects directly to the target database
-      (DB_NAME). Used for schema creation, loading, and querying.
-"""
 
 import os
 
@@ -22,7 +5,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 
-load_dotenv()  # loads a local .env file if present; does nothing otherwise
+load_dotenv() 
 
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
 DB_PORT = os.getenv("DB_PORT", "3306")
@@ -49,7 +32,6 @@ def get_engine(echo: bool = False) -> Engine:
 
 
 if __name__ == "__main__":
-    # Quick connectivity check: python src/db_config.py
     engine = get_server_engine()
     with engine.connect() as conn:
         version = conn.exec_driver_sql("SELECT VERSION();").scalar()

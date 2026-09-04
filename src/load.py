@@ -1,23 +1,3 @@
-"""
-load.py
--------
-Task 5: Load the Data Warehouse (MySQL variant)
-
-Responsibility:
-    - Ensure the target database exists.
-    - Create the DW schema (via sql/create_tables.sql).
-    - Load tables in the required order: Dimensions -> Fact Table.
-    - Validate primary keys, foreign keys, referential integrity,
-      row counts, and absence of invalid dimension references.
-
-Data Warehouse engine: MySQL 8.0+, per Section 7 of the workshop.
-Connection is handled entirely through SQLAlchemy + the PyMySQL driver
-(db_config.py), with credentials read from environment variables /
-.env - never hardcoded. This module replaces the earlier SQLite
-implementation; extract.py, transform.py and dimensional_model.py are
-untouched, since the migration only affects how the model is persisted.
-"""
-
 import logging
 from pathlib import Path
 
@@ -39,7 +19,6 @@ FACT_TABLE = "fact_applications"
 
 
 def ensure_database_exists() -> None:
-    """Creates the target database on the MySQL server if it doesn't exist yet."""
     server_engine = get_server_engine()
     try:
         with server_engine.begin() as conn:
@@ -53,10 +32,7 @@ def create_schema(engine: Engine) -> None:
     """Executes create_tables.sql (statement by statement) against the target database."""
     sql_script = SCHEMA_PATH.read_text(encoding="utf-8")
 
-    # Strip full-line SQL comments BEFORE splitting on ';'. Multi-line
-    # statements (e.g. CREATE TABLE) are preceded by comment blocks, so
-    # filtering whole statements that "start with --" would wrongly
-    # discard the real statement that follows the comment.
+
     code_lines = [
         line for line in sql_script.splitlines()
         if line.strip() and not line.strip().startswith("--")
@@ -72,7 +48,7 @@ def create_schema(engine: Engine) -> None:
 
 
 def load_dimensions(engine: Engine, model: DimensionalModel) -> None:
-    """Loads the four dimension tables. Must run before the fact table."""
+    """Loads the four dimension tables"""
     model.dim_date.to_sql("dim_date", engine, if_exists="append", index=False)
     logger.info("Loaded DimDate: %d rows", len(model.dim_date))
 
@@ -87,7 +63,7 @@ def load_dimensions(engine: Engine, model: DimensionalModel) -> None:
 
 
 def load_fact(engine: Engine, model: DimensionalModel) -> None:
-    """Loads FactApplications. Must run after all dimensions."""
+    """Loads FactApplications"""
     model.fact_applications.to_sql(FACT_TABLE, engine, if_exists="append", index=False, chunksize=5000)
     logger.info("Loaded FactApplications: %d rows", len(model.fact_applications))
 
