@@ -1,12 +1,10 @@
 """
-transform.py
-------------
-Task 3 - 10.2 Data Preparation and 10.3 Business Transformation
 
+Task 3 - 10.2 Data Preparation and 10.3 Business Transformation
 Responsibility:
-    - Correct data types (Application Date -> datetime).
+    - Correct data types (Application Date = datetime).
     - Standardize categorical text (trim whitespace).
-    - Handle missing values / duplicates if required (documented below).
+    - Handle missing values / duplicates if required.
     - Apply the HIRED business rule.
     - Create derived attributes required by R1-R5 (yoe_band, score_gap).
 """
@@ -18,7 +16,6 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-# Business rule 
 HIRE_SCORE_THRESHOLD = 7
 
 # YOE banding used by DimCandidateProfile (supports R3)
@@ -39,23 +36,22 @@ def _yoe_to_band(yoe: int) -> str:
 
 
 def prepare(df: pd.DataFrame) -> pd.DataFrame:
-   
+    """Task 10.2 - Data Preparation."""
     df = df.copy()
-
     before_rows = len(df)
 
-    # 1. Correct data types
+    # Correct data types
     df["Application Date"] = pd.to_datetime(df["Application Date"], errors="coerce")
     invalid_dates = df["Application Date"].isna().sum()
     if invalid_dates:
         logger.warning("%d rows have an unparseable Application Date and will be dropped", invalid_dates)
         df = df.dropna(subset=["Application Date"])
 
-    # 2. Standardize categorical text (trim whitespace only - values are already clean per profiling, this guards against future data drift)
+    # Standardize categorical text
     for col in ["Country", "Seniority", "Technology", "First Name", "Last Name", "Email"]:
         df[col] = df[col].str.strip()
 
-    # 3. Missing values: none found in profiling
+    # Missing values (none found in profiling, guarded defensively)
     required_cols = [
         "Application Date", "Country", "Seniority", "Technology",
         "YOE", "Code Challenge Score", "Technical Interview Score",
@@ -65,7 +61,7 @@ def prepare(df: pd.DataFrame) -> pd.DataFrame:
         logger.warning("%d rows missing required fields and will be dropped", missing_before)
         df = df.dropna(subset=required_cols)
 
-    # 4. Duplicates: profiling found 0 fully duplicated rows
+    # Duplicates (0 found in profiling, guarded defensively)
     dup_count = df.duplicated().sum()
     if dup_count:
         logger.warning("%d fully duplicated rows found and will be dropped", dup_count)
@@ -76,10 +72,10 @@ def prepare(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def apply_business_rules(df: pd.DataFrame) -> pd.DataFrame:
-  
+    """Task 10.3 - Business Transformation."""
     df = df.copy()
 
-    # Hiring outcome (R1, R2, R3, R4, R5)
+    # Hiring outcome (R1-R5)
     df["is_hired"] = (
         (df["Code Challenge Score"] >= HIRE_SCORE_THRESHOLD)
         & (df["Technical Interview Score"] >= HIRE_SCORE_THRESHOLD)
@@ -93,14 +89,11 @@ def apply_business_rules(df: pd.DataFrame) -> pd.DataFrame:
 
     hire_rate = df["is_hired"].mean() * 100
     logger.info("Business rule applied: %d hired / %d total (%.2f%%)", df["is_hired"].sum(), len(df), hire_rate)
-
     return df
 
 
 def transform(raw_df: pd.DataFrame) -> pd.DataFrame:
-    prepared = prepare(raw_df)
-    transformed = apply_business_rules(prepared)
-    return transformed
+    return apply_business_rules(prepare(raw_df))
 
 
 if __name__ == "__main__":

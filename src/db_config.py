@@ -1,11 +1,10 @@
-
 import os
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 
-load_dotenv() 
+load_dotenv()
 
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
 DB_PORT = os.getenv("DB_PORT", "3306")
@@ -21,14 +20,12 @@ def _build_url(include_database: bool) -> str:
     return base + "?charset=utf8mb4"
 
 
-def get_server_engine(echo: bool = False) -> Engine:
-  
-    return create_engine(_build_url(include_database=False), echo=echo)
+def get_server_engine() -> Engine:
+    return create_engine(_build_url(include_database=False))
 
 
-def get_engine(echo: bool = False) -> Engine:
-
-    return create_engine(_build_url(include_database=True), echo=echo)
+def get_engine() -> Engine:
+    return create_engine(_build_url(include_database=True))
 
 
 if __name__ == "__main__":

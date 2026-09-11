@@ -1,8 +1,9 @@
-
 import logging
 from dataclasses import dataclass
 
 import pandas as pd
+
+from transform import YOE_BANDS
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ class DimensionalModel:
 
 
 def build_dim_date(df: pd.DataFrame) -> pd.DataFrame:
-
+    """DimDate - supports R1 (hiring trends over time)."""
     dates = pd.Series(df["Application Date"].dt.normalize().unique()).sort_values()
     dim = pd.DataFrame({"full_date": dates})
     dim["date_key"] = dim["full_date"].dt.strftime("%Y%m%d").astype(int)
@@ -28,37 +29,35 @@ def build_dim_date(df: pd.DataFrame) -> pd.DataFrame:
     dim["month_name"] = dim["full_date"].dt.strftime("%B")
     dim["quarter"] = dim["full_date"].dt.quarter
     dim["year"] = dim["full_date"].dt.year
-
     dim = dim[["date_key", "full_date", "day", "month", "month_name", "quarter", "year"]]
     dim = dim.sort_values("date_key").reset_index(drop=True)
     logger.info("DimDate: %d distinct dates", len(dim))
     return dim
 
 
+def _build_lookup_dimension(df: pd.DataFrame, source_col: str, key_col: str, name_col: str) -> pd.DataFrame:
+    values = sorted(df[source_col].unique())
+    dim = pd.DataFrame({name_col: values})
+    dim.insert(0, key_col, range(1, len(dim) + 1))
+    return dim
+
+
 def build_dim_technology(df: pd.DataFrame) -> pd.DataFrame:
     """DimTechnology - supports R2 (technology comparison)."""
-    values = sorted(df["Technology"].unique())
-    dim = pd.DataFrame({"technology_name": values})
-    dim.insert(0, "technology_key", range(1, len(dim) + 1))
+    dim = _build_lookup_dimension(df, "Technology", "technology_key", "technology_name")
     logger.info("DimTechnology: %d technologies", len(dim))
     return dim
 
 
 def build_dim_country(df: pd.DataFrame) -> pd.DataFrame:
     """DimCountry - supports R4 (geographic recruitment analysis)."""
-    values = sorted(df["Country"].unique())
-    dim = pd.DataFrame({"country_name": values})
-    dim.insert(0, "country_key", range(1, len(dim) + 1))
+    dim = _build_lookup_dimension(df, "Country", "country_key", "country_name")
     logger.info("DimCountry: %d countries", len(dim))
     return dim
 
 
 def build_dim_candidate_profile(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    DimCandidateProfile - supports R3 (seniority + years of experience).
-    Grain of this dimension: one row per distinct (Seniority, yoe_band)
-    combination actually present in the data.
-    """
+    """DimCandidateProfile - supports R3 (seniority + years of experience)."""
     combos = (
         df[["Seniority", "yoe_band"]]
         .drop_duplicates()
@@ -66,13 +65,9 @@ def build_dim_candidate_profile(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index(drop=True)
     )
 
-    band_bounds = {
-        "Entry (0-2)": (0, 2),
-        "Junior (3-5)": (3, 5),
-        "Mid (6-9)": (6, 9),
-        "Senior (10-15)": (10, 15),
-        "Expert (16+)": (16, 30),
-    }
+    # Reuses the same YOE_BANDS defined in transform.py, so the band
+    # boundaries only live in one place in the whole pipeline.
+    band_bounds = {label: (low, high) for low, high, label in YOE_BANDS}
     combos["yoe_min"] = combos["yoe_band"].map(lambda b: band_bounds[b][0])
     combos["yoe_max"] = combos["yoe_band"].map(lambda b: band_bounds[b][1])
 
@@ -91,27 +86,12 @@ def build_fact_applications(
     dim_candidate_profile: pd.DataFrame,
     dim_country: pd.DataFrame,
 ) -> pd.DataFrame:
-    """
-    FactApplications - grain: one row per candidate application.
-    Maps each prepared row to its dimension surrogate keys and keeps
-    only the measures justified by R1-R5.
-    """
+    """FactApplications - grain: one row per candidate application."""
     fact = df.copy()
-
-    # Map date_key
     fact["date_key"] = fact["Application Date"].dt.strftime("%Y%m%d").astype(int)
 
-    # Map technology_key
-    fact = fact.merge(
-        dim_technology, left_on="Technology", right_on="technology_name", how="left"
-    )
-
-    # Map country_key
-    fact = fact.merge(
-        dim_country, left_on="Country", right_on="country_name", how="left"
-    )
-
-    # Map profile_key (Seniority + yoe_band combination)
+    fact = fact.merge(dim_technology, left_on="Technology", right_on="technology_name", how="left")
+    fact = fact.merge(dim_country, left_on="Country", right_on="country_name", how="left")
     fact = fact.merge(
         dim_candidate_profile[["profile_key", "seniority", "yoe_band"]],
         left_on=["Seniority", "yoe_band"],
@@ -131,15 +111,8 @@ def build_fact_applications(
     fact["application_id"] = range(1, len(fact) + 1)
 
     fact = fact[[
-        "application_id",
-        "date_key",
-        "technology_key",
-        "profile_key",
-        "country_key",
-        "Code Challenge Score",
-        "Technical Interview Score",
-        "score_gap",
-        "is_hired",
+        "application_id", "date_key", "technology_key", "profile_key", "country_key",
+        "Code Challenge Score", "Technical Interview Score", "score_gap", "is_hired",
     ]].rename(columns={
         "Code Challenge Score": "code_challenge_score",
         "Technical Interview Score": "technical_interview_score",

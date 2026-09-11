@@ -274,10 +274,29 @@ The main project structure is organized as follows:
 ├── diagrams/
 │   └── star_schema.png
 │
-├── src/
-│   └── main.py
+├── notebooks/
+│   └── data_profiling.ipynb
 │
-├── .env.example
+├── src/
+│   └── db_config.py
+│   └── dimensional_model.py
+│   └── extract.py
+│   └── load.py
+│   └── main.py
+│   └── queries.py
+│   └── transform.py
+│ 
+├── sql/
+│   └── analytical_queries.sql
+│   └── create_tables.sql
+│ 
+├── docs/
+│   └── ETL_2026-2_Workshop-1
+│   └── Workshop-1
+│
+├── results/
+│
+├── .env
 ├── requirements.txt
 └── README.md
 ```

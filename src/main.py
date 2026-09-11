@@ -1,6 +1,6 @@
 """
 Usage:
-    python src/main.py                 # full pipeline: extract transform model load queries
+    python src/main.py                 # full pipeline: extract -> transform -> model -> load -> queries
     python src/main.py --schema        # (re)create schema only
     python src/main.py --load          # extract + transform + model + load only
     python src/main.py --queries       # run the R1-R5 analytical queries only (DW must already be loaded)
@@ -16,11 +16,15 @@ from db_config import get_engine
 from queries import run_all_queries
 
 
-def run_full_pipeline() -> None:
+def run_load_only() -> None:
     raw = extract()
     prepared = transform(raw)
     model = build_dimensional_model(prepared)
     load_data_warehouse(model)
+
+
+def run_full_pipeline() -> None:
+    run_load_only()
     run_all_queries()
 
 
@@ -31,13 +35,6 @@ def run_schema_only() -> None:
         create_schema(engine)
     finally:
         engine.dispose()
-
-
-def run_load_only() -> None:
-    raw = extract()
-    prepared = transform(raw)
-    model = build_dimensional_model(prepared)
-    load_data_warehouse(model)
 
 
 if __name__ == "__main__":

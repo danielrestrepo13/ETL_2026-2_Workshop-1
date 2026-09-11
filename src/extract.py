@@ -10,26 +10,11 @@ RAW_DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "raw" / "candi
 
 
 def extract(source_path: Path = RAW_DATA_PATH) -> pd.DataFrame:
-    
     if not source_path.exists():
         raise FileNotFoundError(f"Source file not found at {source_path}")
 
     logger.info("Extracting raw data from %s", source_path)
-
-    df = pd.read_csv(
-        source_path,
-        sep=";",
-        encoding="utf-8",
-        dtype={
-            "First Name": "string",
-            "Last Name": "string",
-            "Email": "string",
-            "Country": "string",
-            "Seniority": "string",
-            "Technology": "string",
-        },
-    )
-
+    df = pd.read_csv(source_path, sep=";", encoding="utf-8")
     logger.info("Extracted %d rows and %d columns", df.shape[0], df.shape[1])
     return df
 

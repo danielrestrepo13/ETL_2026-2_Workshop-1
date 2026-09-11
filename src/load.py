@@ -71,9 +71,7 @@ def load_fact(engine: Engine, model: DimensionalModel) -> None:
 def validate_load(engine: Engine, model: DimensionalModel) -> None:
     """
     Task 5 validation requirements:
-    primary keys, foreign keys, referential integrity, record counts,
-    absence of invalid dimension references.
-    """
+    primary keys, foreign keys, referential integrity, record counts """
     with engine.connect() as conn:
         # 1. Foreign keys are enforced by InnoDB at DDL level (see create_tables.sql).
         #    Confirm they are actually registered in the information_schema.

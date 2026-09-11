@@ -1,14 +1,8 @@
-
-SET FOREIGN_KEY_CHECKS = 0;
-
 DROP TABLE IF EXISTS fact_applications;
 DROP TABLE IF EXISTS dim_date;
 DROP TABLE IF EXISTS dim_technology;
 DROP TABLE IF EXISTS dim_candidate_profile;
 DROP TABLE IF EXISTS dim_country;
-
-SET FOREIGN_KEY_CHECKS = 1;
-
 
 -- DIMENSION: dim_date
 -- Purpose: enables time-based / trend analysis (R1).
@@ -22,8 +16,7 @@ CREATE TABLE dim_date (
     quarter     SMALLINT     NOT NULL,
     year        SMALLINT     NOT NULL,
     PRIMARY KEY (date_key)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-
+);
 
 -- DIMENSION: dim_technology
 -- Purpose: compares hiring outcomes across technical profiles (R2).
@@ -33,8 +26,7 @@ CREATE TABLE dim_technology (
     technology_name  VARCHAR(100) NOT NULL,
     PRIMARY KEY (technology_key),
     UNIQUE KEY uq_technology_name (technology_name)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-
+);
 
 -- DIMENSION: dim_candidate_profile
 -- Purpose: groups candidates by seniority + years-of-experience band to compare hiring outcomes across profiles (R3).
@@ -47,8 +39,7 @@ CREATE TABLE dim_candidate_profile (
     yoe_max      SMALLINT     NOT NULL,
     PRIMARY KEY (profile_key),
     UNIQUE KEY uq_seniority_yoe_band (seniority, yoe_band)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-
+);
 
 -- DIMENSION: dim_country
 -- Purpose: compares recruitment volume/effectiveness by country (R4).
@@ -58,8 +49,7 @@ CREATE TABLE dim_country (
     country_name  VARCHAR(100) NOT NULL,
     PRIMARY KEY (country_key),
     UNIQUE KEY uq_country_name (country_name)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-
+);
 
 -- FACT: fact_applications
 -- Grain: one row = one candidate application, evaluated with one Code Challenge Score and one Technical Interview Score, resulting in one hiring outcome.
@@ -76,17 +66,13 @@ CREATE TABLE fact_applications (
     is_hired                    TINYINT  NOT NULL,
     PRIMARY KEY (application_id),
     CONSTRAINT fk_fact_date
-        FOREIGN KEY (date_key) REFERENCES dim_date (date_key)
-        ON UPDATE RESTRICT ON DELETE RESTRICT,
+        FOREIGN KEY (date_key) REFERENCES dim_date (date_key),
     CONSTRAINT fk_fact_technology
-        FOREIGN KEY (technology_key) REFERENCES dim_technology (technology_key)
-        ON UPDATE RESTRICT ON DELETE RESTRICT,
+        FOREIGN KEY (technology_key) REFERENCES dim_technology (technology_key),
     CONSTRAINT fk_fact_profile
-        FOREIGN KEY (profile_key) REFERENCES dim_candidate_profile (profile_key)
-        ON UPDATE RESTRICT ON DELETE RESTRICT,
+        FOREIGN KEY (profile_key) REFERENCES dim_candidate_profile (profile_key),
     CONSTRAINT fk_fact_country
-        FOREIGN KEY (country_key) REFERENCES dim_country (country_key)
-        ON UPDATE RESTRICT ON DELETE RESTRICT,
+        FOREIGN KEY (country_key) REFERENCES dim_country (country_key),
     CONSTRAINT chk_code_challenge_score
         CHECK (code_challenge_score BETWEEN 0 AND 10),
     CONSTRAINT chk_technical_interview_score
@@ -97,4 +83,4 @@ CREATE TABLE fact_applications (
     KEY idx_fact_technology (technology_key),
     KEY idx_fact_profile    (profile_key),
     KEY idx_fact_country    (country_key)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+);
